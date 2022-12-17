@@ -13,7 +13,7 @@ This outlines the path to the CSV file exported from Scoutbook.
 
 ## Optional Arguments
 ### --date=[MM/DD/YYYY]
-This defines the date of the date of the last progress report. All progress made since this date will be considered new.
+This defines the date of of the last progress report. All progress made since this date will be considered new.
 ### --id=[scoutid]
 This is used to tell the script to only generate a progress report for the indicated scout (rather than for all scouts).
 ### --cubs
