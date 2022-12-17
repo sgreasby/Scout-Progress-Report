@@ -2,13 +2,13 @@
 This repository constains a script for generating Scouts BSA progress reports
 
 # Requirements
-The script has been tested with pythin 3.11.
+The script has been tested with python 3.11.
 
 # Usage
 python  {--date=[MM/DD/YYYY]} {--id=[scoutid]} {--cubs} [scoutbook.csv]
 
 ## Required Arguments
-###[scoutbook.csv]
+### [scoutbook.csv]
 This outlines the path to the CSV file exported from Scoutbook.
 
 ## Optional Arguments
