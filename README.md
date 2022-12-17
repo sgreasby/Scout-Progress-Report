@@ -31,8 +31,8 @@ If omitted, output will be displayed to the screen.
 Defines the date of of the last progress report. All progress made since this date will be considered new.
 If omitted, a default date of 1/1/1980 wil be used.
 ### --id=[scoutid]
-This is used to tell the script to only generate a progress report for a specific scout.
+Tells the script to only generate a progress report for a specific scout.
 If omitted, a progress report will be generated for all scouts listed in the CSV file.
 ### --cubs
-This is used to indicate that the progress report is generated for Cub Scouts. When this flag is set, the script will not display progress towards eagle, and will indicate Cub Scout and Webelos specific advancement and awards.
+Indicates that the progress report is generated for Cub Scouts. When this flag is set, the script will not display progress towards eagle, and will indicate Cub Scout and Webelos specific advancement and awards.
 If omitted, only Scouts BSA advancement and awards will be displayed.
