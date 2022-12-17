@@ -8,18 +8,35 @@ __license__    = "GPL 2.0"
 __url__        = "http://github.com/sgreasby/Scout-Progress-Report"
 __maintainer__ = "Steven Greasby"
 ###########################################################
+import os
 import sys
-import pandas
-import re
 import datetime
 import builtins
+import re
+import builtins
 
+# The following modules are required, tell non python users how to get them.
+try:
+    import pandas
+except:
+    builtins.print("type \"pip install pandas\" from the command line then try again") 
+try:
+    import psutil
+except:
+    builtins.print("type \"pip install psutil\" from the command line then try again") 
+    
+# Figure out if user ran from command line or clicked icon 
+windows= 1 if psutil.Process(os.getpid()).parent().name() == 'py.exe' else 0
+
+# Debugging code
 warnings=False
-
 PRINT_COLS=50
-
-pandas.set_option('display.max_rows', None)
+# If launched via windows, the window may close before the error can be read
+# If this happens, just set windows=1 and run from the command line to see error.
+#windows=1
+#pandas.set_option('display.max_rows', None)
 #pandas.set_option('display.max_columns', None)
+
 
 eagle_mbs=[['Camping'],
            ['Citizenship in the Community'],
@@ -81,10 +98,25 @@ bsa_rank_reqs={'Scout'          :['1a','1b','1c','1d','1e','1f',
                'Life'           :['1','2','3','4','5','6','7','8'],
                'Eagle'          :['1','2','3','4','5','6','7']}
 
+
+####################################
+# Global Variables
+####################################
 indent=0
+scoutbook=pandas.DataFrame()
+cols=pandas.DataFrame()
+last_review="1/1/1980"
+last_review=pandas.to_datetime([last_review])[0]
+specificScout=False
+cubs=False
+outFile=sys.stdout
+
+####################################
+# Functions
+####################################
 def print(*args, **kwargs):
-    builtins.print("  "*indent,end="")
-    return builtins.print(*args, **kwargs)
+    builtins.print("  "*indent,end="",file=outFile)
+    return builtins.print(*args, **kwargs,file=outFile)
 
 def warn(*args, **kwargs):
     if warnings:
@@ -98,59 +130,108 @@ def error(*args, **kwargs):
     return builtins.print(*args, **kwargs)
 
 def usage():
-    builtins.print("Usage: %s {--date=[MM/DD/YYYY]} {--id=[scoutid]} {--cubs} [scoutbook.csv]\n\n" %(sys.argv[0]))
+    if windows:
+        if scoutbook.empty:
+            builtins.print("Drag CSV file on top of %s icon" %(sys.argv[0]))
+        input("\nPress any key to continue...")
+    else:
+        builtins.print("Usage: %s {--out=[outfile.txt]} {--date=[MM/DD/YYYY]} {--id=[scoutid]} {--cubs} [scoutbook.csv]\n\n" %(sys.argv[0]))
     sys.exit()
 
-# Parse Arguments
-csv_open=False
-# Use pandas to convert last_review to datetime object
-last_review="1/1/1980"
-last_review=pandas.to_datetime([last_review])[0]
-specificScout=False
-cubs=False
-if len(sys.argv)<2:
-    usage()
-for arg in sys.argv[1:]:
-    if arg.startswith('--date='):
-        junk,last_review = arg.split('=')
-        try:
-            # Use pandas to convert last_review to datetime object
-            last_review=pandas.to_datetime([last_review])[0]
-        except:
-            builtins.print("%s does not appear to be a valid date."%last_review)
-            usage()
-    elif arg.startswith('--id='):
-        junk,specificScout = arg.split('=')
-        try:
-            specificScout=int(specificScout)
-        except:
-            builtins.print("%s does not appear to be a valid scout ID"%specificScout)
-            usage()
-    elif arg == '--cubs':
-        cubs=True
-    elif not arg.startswith('--'):
-        builtins.print("Opening %s" %(arg))
-    
-        try:
-            # First row of CSV contains column names.
-            # However some rows have an undocumnted column
-            # Add dummy column to avoid errors when reading in data
-            cols = pandas.read_csv(arg, nrows=1,header=None).values.flatten().tolist()+['Undocumented']
-        except:
-            builtins.print("Failed to read %s." %(arg))
-            usage()
-        else:
-            csv_open=True
-
+def csv_open(csv_file):
+    col_names=pandas.DataFrame()
+    data=pandas.DataFrame()
+    builtins.print("Opening %s" %(csv_file))
+    try:
+        # First row of CSV contains column names.
+        # However some rows have an undocumnted column
+        # Add dummy column to avoid errors when reading in data
+        col_names = pandas.read_csv(csv_file, nrows=1,header=None).values.flatten().tolist()+['Undocumented']
+    except:
+        builtins.print("Failed to read %s." %(csv_file))
+        usage()
+    else:
         # read the rest of the CSV file
         # Skip first row (col names) and use names determined above
-        scoutbook = pandas.read_csv(arg, skiprows=1,names=cols)
-    else:
-        usage()
+        data = pandas.read_csv(csv_file, skiprows=1,names=col_names)
+    return data,col_names
 
-if not csv_open:
-        usage()
 
+def convert_date(date):
+    try:
+        # Use pandas to convert date to datetime object
+        date=pandas.to_datetime([date])[0]
+    except:
+        error("%s does not appear to be a valid date."%date)
+        usage()
+    return date
+
+def id_check(scoutID):
+    try:
+        scoutID=int(scoutID)
+    except:
+        error("%s does not appear to be a valid scout ID"%scoutID)
+        usage()
+    return scoutID
+
+def out_check(name):
+    handle=None
+    if os.path.exists(name):
+        error("%s already exists"%name)
+        usage()
+    try:
+        handle=open(name,'a')
+    except:
+        error("Unable to open %s for writing."%name)
+        usage()
+    return handle
+
+
+if len(sys.argv)<2:
+    usage()
+
+if windows:
+    scoutbook,cols=csv_open(sys.argv[1]);        
+
+    response=input("Enter date of last progress report or leave blank for none (MM/DD/YYYY): ")
+    if response:
+        last_review=convert_date(response)
+
+    response=input("Enter ID of a specfic scout or leave blank to run for all scouts: ")
+    if response:
+        specificScout=id_check(response)
+
+    response='unknown'
+    while not response in ['y','Y','n','N','']:
+        response=input("Run script for Cub Scouts? y/N: ")
+
+    if response in ['y','Y']:
+        cubs=True
+
+    response=input("Enter ouput file or leave blank to print to screen: ")
+    if response:
+        outFile=out_check(response)
+
+else:
+    for arg in sys.argv[1:]:
+        if arg.startswith('--out='):
+            junk,value = arg.split('=')
+            outFile=out_check(value)
+        elif arg.startswith('--date='):
+            junk,value = arg.split('=')
+            last_review=convert_date(value)
+        elif arg.startswith('--id='):
+            junk,value = arg.split('=')
+            specificScout=id_check(value)
+        elif arg == '--cubs':
+            cubs=True
+        elif not arg.startswith('--'):
+            scoutbook,cols=csv_open(arg);        
+        else:
+            usage()
+
+    if scoutbook.empty:
+        usage()
 
 #######################################
 # Clean up imported data before using it
@@ -211,6 +292,9 @@ for scoutID in scoutIDs:
     rankup_date = approved_ranks['Date Completed'].max()
     rank = approved_ranks['Advancement'].loc[approved_ranks['Date Completed']==rankup_date].to_string(index=False)
     
+    if outFile != sys.stdout:
+        builtins.print("Processing %s, %s."%(last_name, first_name))
+
     indent=0
     print("%s, %s: %s (%s)" %(last_name,first_name,rank,str(rankup_date.date())))
     
@@ -486,7 +570,7 @@ for scoutID in scoutIDs:
                 else:
                     all_reqs = bsa_rank_reqs[rank[:-17]]
             except:
-                builtins.print("Warning: %s rank not yet supported"%rank[:-17])
+                warn("%s rank not yet supported"%rank[:-17])
             s=set(new_reqs)
             reqs_remaining=[req for req in all_reqs if req not in s]
             s=set(prev_reqs)
@@ -666,3 +750,5 @@ if specificScout and not scoutFound:
     builtins.print("Scout %d not found" % specificScout)
     usage()
 
+if windows:
+    input("\nPress any key to continue...")
