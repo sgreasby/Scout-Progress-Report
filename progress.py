@@ -134,13 +134,14 @@ td {
   padding-left:20px;
 }
 
-
-
-
 body {
   background-image: url('img/unitlogo.jpg');
   background-size: auto;
+  -webkit-background-size: auto;
+  -moz-background-size: auto;
+  -o-background-size: auto;
   background-repeat: no-repeat;
+  height:100vh;
 }
 .page {
   margin: 0px;
