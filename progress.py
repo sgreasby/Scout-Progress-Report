@@ -57,30 +57,13 @@ ul,li{list-style:none;margin:0;padding:0;}
 strong{font-weight:bold;}
 em{font-style:italic;}
 
-h1 ~ *:not(h1) {
-  margin-left: 20px;
-}
-h2 ~ *:not(h1):not(.h1):not(h2) {
-  margin-left: 20px;
-}
-h3 ~ *:not(h1):not(.h1):not(h2):not(.h2):not(h3) {
-  margin-left: 20px;
-}
-h4 ~ *:not(h1):not(.h1):not(h2):not(.h2):not(h3):not(.h3):not(h4) {
-  margin-left: 20px;
-}
-h5 ~ *:not(h1):not(.h1):not(h2):not(.h2):not(h3):not(.h3):not(h4):not(.h4):not(h5) {
-  margin-left: 20px;
-}
-h6 ~ *:not(h1):not(.h1):not(h2):not(.h2):not(h3):not(.h3):not(h4):not(.h4):not(h5):not(.h5):not(h6) {
-  margin-left: 10px;
-}
 
 caption {
   width: 1px;
   font-weight: bold;
   text-align: left;
   white-space: nowrap;
+  padding-left:20px;
 }
 th {
   width: 1px;
@@ -93,26 +76,90 @@ td {
   width: 1px;
   text-align: left;
   white-space: nowrap;
-  padding-left:10px;
+  padding-left:20px;
 }
 
-#recent_rankups td {
+.eagle_reqs {
   padding-left:20px;
 }
-#approved_adventures td {
+.recent_progess {
   padding-left:20px;
 }
-#complete_adventures td {
+.recent_rankups {
   padding-left:20px;
 }
-#approved_mbs td {
+.approved_adventures {
   padding-left:20px;
 }
-#complete_mbs td {
+.complete_adventures {
   padding-left:20px;
 }
-#approved_awards td {
+.approved_mbs {
   padding-left:20px;
+}
+.complete_mbs {
+  padding-left:20px;
+}
+.approved_awards {
+  padding-left:20px;
+}
+.requirement_progress {
+  padding-left:20px;
+}
+.rank_progress {
+  padding-left:20px;
+}
+.rank_progress p {
+  padding-left:20px;
+}
+.adventure_progress {
+  padding-left:20px;
+}
+.adventure_progress p {
+  padding-left:20px;
+}
+.mb_progress {
+  padding-left:20px;
+}
+.mb_progress p {
+  padding-left:20px;
+}
+.award_progress {
+  padding-left:20px;
+}
+.award_progress p {
+  padding-left:20px;
+}
+.requirements {
+  padding-left:20px;
+}
+
+
+
+
+body {
+  background-image: url('img/unitlogo.jpg');
+  background-size: auto;
+  background-repeat: no-repeat;
+}
+.page {
+  margin: 0px;
+  height:100%;
+  background: rgba(255, 255, 255, 0.8);
+}
+.name {
+  display: inline-block;
+}
+.rank {
+  display: inline-block;
+}
+.rank_logo {
+  height: 30px;
+  padding: 0px;
+}
+hr {
+  border: 1px solid black;
+  margin-left: 0px;
 }
 
 """
@@ -131,6 +178,21 @@ eagle_mbs=[['Camping'],
            ['Personal Fitness'],
            ['Personal Management'],
            ['Citizenship in Society']]
+
+rankfile = {'Bobcat'         : 'bobcat.jpg',
+            'Lion'           : 'lion.jpg',
+            'Tiger'          : 'tiger.jpg',
+            'Wolf'           : 'wolf.jpg',
+            'Bear'           : 'bear.jpg',
+            'Webelos'        : 'webelos.jpg',
+            'Arrow of Light' : 'arrowoflight.jpg',
+            'Scout'          : 'scout.jpg',
+            'Tenderfoot'     : 'tenderfoot.jpg',
+            'Second Class'   : 'secondclass.jpg',
+            'First Class'    : 'firstclass.jpg',
+            'Star Scout'     : 'star.jpg',
+            'Life Scout'     : 'life.jpg',
+            'Eagle Scout'    : 'eagle.jpg'}
 
 #TODO:Are these right?
 cub_rank_reqs={'Bobcat'          :['1','2','3','4','5','6','7'],
@@ -173,9 +235,9 @@ bsa_rank_reqs={'Scout'          :['1a','1b','1c','1d','1e','1f',
                                   '7a','7b','7c','7d','7e','7f'
                                   '8a','8b','9a','9b','9c','9d',
                                   '10','11','12','13'],
-               'Star'           :['1','2','3','4','5','6','7','8'],
-               'Life'           :['1','2','3','4','5','6','7','8'],
-               'Eagle'          :['1','2','3','4','5','6','7']}
+               'Star Scout'     :['1','2','3','4','5','6','7','8'],
+               'Life Scout'     :['1','2','3','4','5','6','7','8'],
+               'Eagle Scout'    :['1','2','3','4','5','6','7']}
 
 
 ####################################
@@ -239,8 +301,8 @@ def convert_date(date):
         usage()
     return date
 
-def print_list(table_id,table_caption,entries):
-    with table(id=table_id,cls='table table-striped'):
+def print_list(table_cls,table_caption,entries):
+    with table(cls='%s %s'%('table table-striped',table_cls)):
         caption(table_caption)
         with tbody():
             if len(entries) == 0:
@@ -256,7 +318,7 @@ def print_reqs(achievement,recent_reqs,previous_reqs,remaining_reqs):
     if remaining_reqs:
         max_cols = max(max_cols,len(remaining_reqs))
 
-    with table(id=achievement,cls='table table-striped'):
+    with table(cls='table table-striped requirements'):
         caption(achievement)                                
         with tbody():
             with tr():
@@ -370,12 +432,14 @@ if os.path.isdir('output'):
         exit()
 
 os.mkdir('output')
+if os.path.isdir('img'):
+    shutil.copytree('img',os.path.join('output','img'))
 os.chdir('output')
 
 namesList=[]
 scoutFound=False
 for scoutID in scoutIDs:
-    names={'last':None,'first':None,'file':None}
+    names={'last':None,'first':None,'file':None,'idle':False}
     # Store all data for given scout into a new table
     scout_data = scoutbook[(scoutbook['BSA Member ID'] == scoutID)].copy()
     
@@ -385,13 +449,24 @@ for scoutID in scoutIDs:
 
     approved_ranks = scout_data[(scout_data['Advancement Type']=='Rank') & (scout_data['Approved']==1)].copy()
     rankup_date = approved_ranks['Date Completed'].max()
-    rank = approved_ranks['Advancement'].loc[approved_ranks['Date Completed']==rankup_date].to_string(index=False)
+    rank = list(approved_ranks['Advancement'].loc[approved_ranks['Date Completed']==rankup_date])
+    # Some scouts may have multiple ranks recorded on the same date
+    # The following uses the rankfile dictionary to find the highest rank and select that one
+    # If no rank was found, the rank is set to No Rank
+    if len(rank) > 1:
+        for key in rankfile.keys():
+            if key in rank:
+                rank.remove(key)
+                break
+    if len(rank) == 0:
+        rank = "No Rank"
+    else:
+        rank = rank[0]
 
     print("Processing %s, %s."%(last_name, first_name))
     names['last']=last_name
     names['first']=first_name
     names['file']="%s_%s.html" % (last_name,first_name)
-    namesList.append(names)
     doc = dominate.document(title='%s %s Progress Report' % (first_name,last_name))
     with doc.head:
         # Include link to optional style sheet
@@ -400,12 +475,15 @@ for scoutID in scoutIDs:
         else:
             style(default_style)
     with doc:
-        with div(cls='scout'):
-            if not cubs and rank in cub_rank_reqs:
-                h2("%s, %s: No Rank" %(last_name,first_name))
-            else:
-                h2("%s, %s: %s (%s)" %(last_name,first_name,rank,str(rankup_date.date())))
-    
+        with div(cls='page'):
+            with div(cls='namerank'):
+                h2("%s, %s:" %(last_name,first_name),cls='name')
+                if not cubs and rank in cub_rank_reqs:
+                    h2("No Rank",cls='rank')
+                else:
+                    img(src=os.path.join('img',rankfile[rank]), onerror='this.style.display=\'none\'', alt='', cls='rank_logo')
+                    h2(" %s (%s)" %(rank,str(rankup_date.date())),cls='rank')
+            hr()
             # Remove old requirement for completed ranks
             ranks = approved_ranks['Advancement'].unique()
             for rank in ranks:
@@ -525,6 +603,11 @@ for scoutID in scoutIDs:
                     p("Eagle MBs = %s/%s (%s in progess)" %(mb_eagle_cnt['Approved'],mb_eagle_cnt['Required'],mb_eagle_cnt['Complete']+mb_eagle_cnt['In Progress']))
                     p("Elective MBs = %s/%s (%s in progress)" %(mb_elective_cnt['Approved'],mb_elective_cnt['Required'],mb_elective_cnt['Complete']+mb_elective_cnt['In Progress']))
 
+            # Search scout record for entried completed since last review
+            recent_entries = len(scout_data['Date Completed'].loc[scout_data['Date Completed'] > last_review])          
+            if recent_entries == 0:
+                names['idle']=True
+
             with div(cls='recent_progess'):
                 if last_review != default_date:
                     h3("Progress Since %s" % str(last_review.date()))
@@ -637,7 +720,7 @@ for scoutID in scoutIDs:
                             reqs_remaining=[req for req in reqs_remaining if req not in s]
 
                             # Print completed reqs
-                            print_reqs("%ss"%rank,new_reqs,prev_reqs,reqs_remaining)
+                            print_reqs(rank,new_reqs,prev_reqs,reqs_remaining)
             
                 if cubs:
                     with div(cls='adventure_progress'):
@@ -726,6 +809,7 @@ for scoutID in scoutIDs:
 
     with open(names['file'], 'w') as file:
         file.write(doc.render())
+    namesList.append(names)
 
 doc = dominate.document(title='Scout Progress Reports')
 with doc.head:
@@ -735,10 +819,17 @@ with doc.head:
     else:
         style(default_style)
 with doc:
-    h2("Scouts")
-    with div(id='toc').add(ol()):
-        for names in namesList:
-            li(a("%s %s"%(names['first'],names['last']), href=names['file']))
+    with div(cls='page'):
+        h2("Progressing Scouts")
+        with div(cls='toc').add(ol()):
+            for names in namesList:
+                if not names['idle']:
+                    li(a("%s %s"%(names['first'],names['last']), href=names['file']))
+        h2("Idle Scouts")
+        with div(cls='toc').add(ol()):
+            for names in namesList:
+                if names['idle']:
+                    li(a("%s %s"%(names['first'],names['last']), href=names['file']))
 
 with open('index.html', 'w') as file:
     file.write(doc.render())
