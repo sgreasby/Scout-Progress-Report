@@ -136,10 +136,10 @@ td {
 
 body {
   background-image: url('img/unitlogo.jpg');
-  background-size: auto;
-  -webkit-background-size: auto;
-  -moz-background-size: auto;
-  -o-background-size: auto;
+  background-size: contain;
+  -webkit-background-size: contain;
+  -moz-background-size: contain;
+  -o-background-size: contain;
   background-repeat: no-repeat;
   height:100vh;
 }
