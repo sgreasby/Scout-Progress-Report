@@ -29,6 +29,11 @@ try:
     from dominate.tags import *
 except:
     print("type \"pip install dominate\" from the command line then try again") 
+try:
+    import matplotlib.pyplot as plt
+except:
+    print("type \"pip install matplotlib\" from the command line then try again") 
+
 
 # While not needed to run the script, autopytoexe is used to build .exe releases
     
@@ -135,7 +140,7 @@ td {
 }
 
 body {
-  background-image: url('img/unitlogo.jpg');
+  background-image: url('img/background.jpg');
   background-size: contain;
   -webkit-background-size: contain;
   -moz-background-size: contain;
@@ -154,8 +159,12 @@ body {
 .rank {
   display: inline-block;
 }
-.rank_logo {
+.emblem {
   height: 30px;
+  padding: 0px;
+}
+.rank_chart {
+  height: 200px;
   padding: 0px;
 }
 hr {
@@ -180,20 +189,20 @@ eagle_mbs=[['Camping'],
            ['Personal Management'],
            ['Citizenship in Society']]
 
-rankfile = {'Bobcat'         : 'bobcat.jpg',
-            'Lion'           : 'lion.jpg',
-            'Tiger'          : 'tiger.jpg',
-            'Wolf'           : 'wolf.jpg',
-            'Bear'           : 'bear.jpg',
-            'Webelos'        : 'webelos.jpg',
-            'Arrow of Light' : 'arrowoflight.jpg',
-            'Scout'          : 'scout.jpg',
-            'Tenderfoot'     : 'tenderfoot.jpg',
-            'Second Class'   : 'secondclass.jpg',
-            'First Class'    : 'firstclass.jpg',
-            'Star Scout'     : 'star.jpg',
-            'Life Scout'     : 'life.jpg',
-            'Eagle Scout'    : 'eagle.jpg'}
+emblemfile = {'Bobcat'         : 'emblem_bobcat.jpg',
+              'Lion'           : 'emblem_lion.jpg',
+              'Tiger'          : 'emblem_tiger.jpg',
+              'Wolf'           : 'emblem_wolf.jpg',
+              'Bear'           : 'emblem_bear.jpg',
+              'Webelos'        : 'emblem_webelos.jpg',
+              'Arrow of Light' : 'emblem_arrow_of_light.jpg',
+              'Scout'          : 'emblem_scout.jpg',
+              'Tenderfoot'     : 'emblem_tenderfoot.jpg',
+              'Second Class'   : 'emblem_second_class.jpg',
+              'First Class'    : 'emblem_first_class.jpg',
+              'Star Scout'     : 'emblem_star_scout.jpg',
+              'Life Scout'     : 'emblem_life_scout.jpg',
+              'Eagle Scout'    : 'emblem_eagle_scout.jpg'}
 
 #TODO:Are these right?
 cub_rank_reqs={'Bobcat'          :['1','2','3','4','5','6','7'],
@@ -250,6 +259,7 @@ default_date=pandas.to_datetime(["1/1/1980"])[0]
 last_review=default_date
 cubs=False
 stylesheet=None
+clean=False
 
 ####################################
 # Functions
@@ -271,7 +281,7 @@ def usage():
             print("Drag CSV file on top of %s icon" %(sys.argv[0]))
         input("\nPress any key to continue...")
     else:
-        print("Usage: %s {--date=[MM/DD/YYYY]} {--css=[style.css]} {--cubs} [scoutbook.csv]\n\n" %(sys.argv[0]))
+        print("Usage: %s {--date=[MM/DD/YYYY]} {--css=[style.css]} {--cubs} {--clean} [scoutbook.csv]\n\n" %(sys.argv[0]))
     sys.exit()
 
 def csv_open(csv_file):
@@ -366,6 +376,13 @@ if windows:
     if response in ['y','Y']:
         cubs=True
 
+    response='unknown'
+    while not response in ['y','Y','n','N','']:
+        response=input("Clean up old files? y/N: ")
+
+    if response in ['y','Y']:
+        clean=True
+
 else:
     for arg in sys.argv[1:]:
         if arg.startswith('--date='):
@@ -376,6 +393,8 @@ else:
             stylesheet=value
         elif arg == '--cubs':
             cubs=True
+        elif arg == '--clean':
+            clean=True
         elif not arg.startswith('--'):
             scoutbook,cols=csv_open(arg);        
         else:
@@ -423,24 +442,27 @@ scoutbook['Date Completed'] = pandas.to_datetime(scoutbook['Date Completed'])
 
 print("")
 
-outFiles=[]
-import shutil
-if os.path.isdir('output'):
-    try:
-        shutil.rmtree('output')
-    except:
-        error("Unable to delete output folder")
-        exit()
+if clean:
+    # Delete the old output files and create a new output folder
+    if os.path.isdir('output'):
+        try:
+            shutil.rmtree('output')
+        except:
+            error("Unable to delete output folder")
+            exit()
 
-os.mkdir('output')
+    os.mkdir('output')
+
+# Always copy new img folder to output (if one exists)
 if os.path.isdir('img'):
     shutil.copytree('img',os.path.join('output','img'))
+
 os.chdir('output')
 
 namesList=[]
 scoutFound=False
 for scoutID in scoutIDs:
-    names={'last':None,'first':None,'file':None,'idle':False}
+    names={'last':None,'first':None,'html':None,'chart':None,'idle':False}
     # Store all data for given scout into a new table
     scout_data = scoutbook[(scoutbook['BSA Member ID'] == scoutID)].copy()
     
@@ -452,10 +474,10 @@ for scoutID in scoutIDs:
     rankup_date = approved_ranks['Date Completed'].max()
     rank = list(approved_ranks['Advancement'].loc[approved_ranks['Date Completed']==rankup_date])
     # Some scouts may have multiple ranks recorded on the same date
-    # The following uses the rankfile dictionary to find the highest rank and select that one
+    # The following uses the emblemfile dictionary to find the highest rank and select that one
     # If no rank was found, the rank is set to No Rank
     if len(rank) > 1:
-        for key in rankfile.keys():
+        for key in emblemfile.keys():
             if key in rank:
                 rank.remove(key)
                 break
@@ -467,7 +489,10 @@ for scoutID in scoutIDs:
     print("Processing %s, %s."%(last_name, first_name))
     names['last']=last_name
     names['first']=first_name
-    names['file']="%s_%s.html" % (last_name,first_name)
+    names['html']="%s_%s.html" % (last_name,first_name)
+    names['chart']="%s_%s.png" % (last_name,first_name)
+    names['chart']=os.path.join('img',names['chart'])
+
     doc = dominate.document(title='%s %s Progress Report' % (first_name,last_name))
     with doc.head:
         # Include link to optional style sheet
@@ -482,9 +507,69 @@ for scoutID in scoutIDs:
                 if not cubs and rank in cub_rank_reqs:
                     h2("No Rank",cls='rank')
                 else:
-                    img(src=os.path.join('img',rankfile[rank]), onerror='this.style.display=\'none\'', alt='', cls='rank_logo')
+                    img(src=os.path.join('img',emblemfile[rank]), onerror='this.style.display=\'none\'', alt='', cls='emblem')
                     h2(" %s (%s)" %(rank,str(rankup_date.date())),cls='rank')
+
             hr()
+
+            # Sort all the approved ranks then remove cub ranks to get a list of scouts BSA ranks
+            bsa_ranks = approved_ranks.sort_values(by='Date Completed')
+            for key in cub_rank_reqs.keys():
+                bsa_ranks.drop(bsa_ranks.index[bsa_ranks['Advancement'] == key], inplace=True)
+            
+            # Create a list of rankup dates in datetime format (now sorted)
+            bsa_rank_dates = bsa_ranks['Date Completed'].tolist()
+            
+            # Insert the day before each rankup into the list
+            # Meanwhile also built up rank counts list
+            bsa_rank_counts=[]
+            if len(bsa_rank_dates) > 0:
+                for i in range(len(bsa_rank_dates)-1,-1,-1):
+                    bsa_rank_dates.insert(i,bsa_rank_dates[i]-pandas.Timedelta(days=1))
+                    bsa_rank_counts=[i,i+1]+bsa_rank_counts
+     
+                #Add entry for today
+                bsa_rank_dates += [pandas.to_datetime("today")]
+                bsa_rank_counts += [bsa_rank_counts[-1]]
+            else:
+                #Add entry for today
+                bsa_rank_dates = [pandas.to_datetime("today")]
+                bsa_rank_counts = [0]
+
+            #Add entry for Jan 1 of the year when the scout earned their first mb or rank
+            merit_badges = scout_data[(scout_data['Advancement Type'] == 'Merit Badge')]
+            if merit_badges.shape[0] > 0:
+                first_mb = merit_badges['Date Completed'].min()
+                first_adv = min(first_mb,bsa_rank_dates[0])
+            else:
+                first_adv = bsa_rank_dates[0]
+            bsa_rank_dates = [pandas.to_datetime("1/1/%d"%first_adv.year)]+bsa_rank_dates
+            bsa_rank_counts = [0] + bsa_rank_counts
+
+            # Reassmble into a pandas dataframe for plotting
+            rankups = pandas.DataFrame()
+            rankups['value'] = bsa_rank_counts
+            rankups['datetime'] = bsa_rank_dates
+            rankups.set_index('datetime',inplace=True)
+
+            # Plot It!
+            plt.clf()
+            ax = plt.axes()
+            plt.plot(rankups)
+            ax.yaxis.set_ticks([0,1,2,3,4,5,6,7])
+            ax.set_yticklabels(['No Rank', 'Scout','Tenderfoot','Second Class','First Class','Star Scout','Life Scout','Eagle Scout'])
+            plt.xlim(bsa_rank_dates[0],pandas.to_datetime("1/1/%d"%(bsa_rank_dates[0].year+8)))
+            plt.ylim(0,7)
+            plt.grid(True)
+            plt.plot(rankups, color="blue")
+            plt.gcf().autofmt_xdate()
+            # Save to file
+            plt.savefig(names['chart'], bbox_inches='tight', transparent=True)
+                
+            # Add to html file
+            img(src=names['chart'], onerror='this.style.display=\'none\'', alt='', cls='rank_chart')
+
+
             # Remove old requirement for completed ranks
             ranks = approved_ranks['Advancement'].unique()
             for rank in ranks:
@@ -603,6 +688,8 @@ for scoutID in scoutIDs:
                 with div(cls='eagle_reqs'):
                     p("Eagle MBs = %s/%s (%s in progess)" %(mb_eagle_cnt['Approved'],mb_eagle_cnt['Required'],mb_eagle_cnt['Complete']+mb_eagle_cnt['In Progress']))
                     p("Elective MBs = %s/%s (%s in progress)" %(mb_elective_cnt['Approved'],mb_elective_cnt['Required'],mb_elective_cnt['Complete']+mb_elective_cnt['In Progress']))
+
+
 
             # Search scout record for entried completed since last review
             recent_entries = len(scout_data['Date Completed'].loc[scout_data['Date Completed'] > last_review])          
@@ -808,7 +895,7 @@ for scoutID in scoutIDs:
                             # Print completed reqs
                             print_reqs(award,new_reqs,prev_reqs,None)
 
-    with open(names['file'], 'w') as file:
+    with open(names['html'], 'w') as file:
         file.write(doc.render())
     namesList.append(names)
 
@@ -825,12 +912,12 @@ with doc:
         with div(cls='toc').add(ol()):
             for names in namesList:
                 if not names['idle']:
-                    li(a("%s %s"%(names['first'],names['last']), href=names['file']))
+                    li(a("%s %s"%(names['first'],names['last']), href=names['html']))
         h2("Idle Scouts")
         with div(cls='toc').add(ol()):
             for names in namesList:
                 if names['idle']:
-                    li(a("%s %s"%(names['first'],names['last']), href=names['file']))
+                    li(a("%s %s"%(names['first'],names['last']), href=names['html']))
 
 with open('index.html', 'w') as file:
     file.write(doc.render())
@@ -838,5 +925,5 @@ with open('index.html', 'w') as file:
 print("Opening output in browser")
 webbrowser.open('file://'+os.path.realpath('index.html'))
 
-#if windows:
-#    input("\nPress any key to continue...")
+if windows:
+    input("\nPress any key to continue...")
